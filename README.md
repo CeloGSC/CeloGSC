@@ -1,16 +1,14 @@
-### Hi there 👋
+### Olá o/
 
-<!--
-**CeloGSC/CeloGSC** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+<br/>
 
-Here are some ideas to get you started:
+- 🔭 Estou atualmente trabalhando na EY (Ernst & Young) como trainee na área de _Advanced Analytics_.
+- 🌱 Tenho utilizado e aprendido muito sobre _machine learning_, engenharia de dados, _Azure Cloud Services_ e automação de processos.
+- 📖 Tenho me interessado cada vez mais por aprendizado de máquina
+- 💻 Tenho python como minha principal linguagem de programação.
+- 📫 Email: marcelogscarneiro@gmail.com
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+<br />
+
+
+- 🛰️ Extras: matemática, linux e violão
