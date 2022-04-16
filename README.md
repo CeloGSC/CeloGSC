@@ -31,6 +31,7 @@
     - Planejamento: 
 
       <ol>
+        <li> Fazer um jogo de damas 🔲 </li>
         <li> Xadrez no terminal (PvP) 🔲 </li>
         <li> Inteface para o xadrez (PvP) 🔲 </li>
         <li> Estudar sobre aprendizado de máquina voltado para jogos 🔲 </li>
