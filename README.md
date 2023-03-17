@@ -19,24 +19,5 @@
 
     - Aprendizado de máquina (_machine learning_)
   
-    - Xadrez
-  
-    - Linux
-
-
-<h3> ♟️ Projeto atual ♟️ </h3>
-
- - Construir um jogo de xadrez com uma IA descente.
-
-    - Planejamento: 
-
-      <ol>
-        <li> Fazer um jogo de damas 🔲 </li>
-        <li> Xadrez no terminal (PvP) 🔲 </li>
-        <li> Inteface para o xadrez (PvP) 🔲 </li>
-        <li> Estudar sobre aprendizado de máquina voltado para jogos 🔲 </li>
-        <li> IA 🔲 </li>
-        <li> Xadrez (Opcção "vs Cpu") 🔲 </li>
-      </ol>
 
 <br />
