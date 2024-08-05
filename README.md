@@ -9,7 +9,9 @@
 <br/>
 <h3> Um pouco sobre mim: </h3>
 
-- 🧮 Mestrando em matemática no IMPA (Instituto de Matemática Pura e Aplicada);
+- 🧮 Cursando doutorado em matemática aplicada pelo IMPA (Instituto de Matemática Pura e Aplicada);
+
+- 🧮 Mestre em matemática aplicada pelo IMPA (Instituto de Matemática Pura e Aplicada);
  
 - 💼 Já trabalhei na EY (Ernst & Young) como trainee na área de _Advanced Analytics_;
  
@@ -20,6 +22,8 @@
 - 🔭 Procurando aprender mais sobre:
 
     - Aprendizado de máquina (_machine learning_)
+    - Estatística
+    - Visualização de dados
     - 
 ![Snake animation](https://github.com/CeloGSC/CeloGSC/blob/output/github-contribution-grid-snake.svg)
 
