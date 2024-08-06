@@ -24,7 +24,6 @@
     - Aprendizado de máquina (_machine learning_)
     - Estatística
     - Visualização de dados
-    - 
-![Snake animation](https://github.com/CeloGSC/CeloGSC/blob/output/github-contribution-grid-snake.svg)
+  
 
 <br />
