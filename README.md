@@ -17,80 +17,65 @@
 <details open>
 <summary><b>🇬🇧 English</b></summary>
 
-#### 👋 About me
+#### About me
 
-I'm a PhD student in Applied Mathematics at [IMPA](https://impa.br) (Instituto de Matemática Pura e Aplicada). I work on machine learning for **3D segmentation**, with two kinds of data: medical volumes, such as finding tumors in MRI scans, and LiDAR point clouds of industrial plants.
+I'm a PhD student in applied math at [IMPA](https://impa.br). I work on 3D segmentation with machine learning, on two very different kinds of data: MRI volumes and LiDAR point clouds.
 
-#### 🔬 Current projects
+#### What I'm working on
 
-- **Breast tumor detection in contrast-enhanced MRI.** Detecting and segmenting lesions in dynamic contrast-enhanced (DCE) breast MRI.
-- **Equipment segmentation in oil & gas plants.** Segmenting machines and equipment in LiDAR point clouds of oil and gas facilities.
+- Finding breast tumors in contrast-enhanced MRI (DCE-MRI)
+- Segmenting equipment in LiDAR scans of oil and gas plants
 
-#### 💡 Interests
+#### Interests
 
-- Teaching mathematics
-- Machine learning for computer-aided diagnosis (CAD) tools
-- Machine learning for computer vision
+Teaching math, machine learning for computer-aided diagnosis (CAD), and computer vision in general.
 
-#### 🎓 Background
+#### Background
 
-- **PhD in Applied Mathematics**, IMPA (in progress)
-- **MSc in Applied Mathematics**, IMPA
-- **BSc in Applied Mathematics**, UFRJ (Universidade Federal do Rio de Janeiro)
-- Previously an Advanced Analytics trainee at EY (Ernst & Young)
+I did my BSc in applied math at UFRJ and my MSc at IMPA, where I'm now doing my PhD. I was also an Advanced Analytics trainee at EY.
 
 </details>
 
 <details>
 <summary><b>🇧🇷 Português</b></summary>
 
-#### 👋 Sobre mim
+#### Sobre mim
 
-Sou doutorando em Matemática Aplicada no [IMPA](https://impa.br) (Instituto de Matemática Pura e Aplicada). Trabalho com aprendizado de máquina para **segmentação 3D** em dois tipos de dados: volumes médicos, como a detecção de tumores em ressonâncias magnéticas, e nuvens de pontos LiDAR de plantas industriais.
+Sou doutorando em matemática aplicada no [IMPA](https://impa.br). Trabalho com segmentação 3D usando aprendizado de máquina, em dois tipos de dados bem diferentes: volumes de ressonância magnética e nuvens de pontos LiDAR.
 
-#### 🔬 Projetos atuais
+#### No que estou trabalhando
 
-- **Detecção de tumores de mama em ressonância magnética com contraste.** Detecção e segmentação de lesões em ressonância magnética de mama com contraste dinâmico (DCE-MRI).
-- **Segmentação de equipamentos em plantas de óleo e gás.** Segmentação de máquinas e equipamentos em nuvens de pontos LiDAR de instalações de óleo e gás.
+- Encontrar tumores de mama em ressonância magnética com contraste (DCE-MRI)
+- Segmentar equipamentos em escaneamentos LiDAR de plantas de óleo e gás
 
-#### 💡 Interesses
+#### Interesses
 
-- Ensino de matemática
-- Aprendizado de máquina aplicado a ferramentas de diagnóstico auxiliado por computador (CAD)
-- Aprendizado de máquina para visão computacional
+Ensino de matemática, aprendizado de máquina para diagnóstico auxiliado por computador (CAD) e visão computacional em geral.
 
-#### 🎓 Formação
+#### Formação
 
-- **Doutorado em Matemática Aplicada**, IMPA (em andamento)
-- **Mestrado em Matemática Aplicada**, IMPA
-- **Bacharelado em Matemática Aplicada**, UFRJ (Universidade Federal do Rio de Janeiro)
-- Fui trainee de Advanced Analytics na EY (Ernst & Young)
+Fiz a graduação em matemática aplicada na UFRJ e o mestrado no IMPA, onde agora faço o doutorado. Também fui trainee de Advanced Analytics na EY.
 
 </details>
 
 <details>
 <summary><b>🇪🇸 Español</b></summary>
 
-#### 👋 Sobre mí
+#### Sobre mí
 
-Soy estudiante de doctorado en Matemática Aplicada en el [IMPA](https://impa.br) (Instituto de Matemática Pura e Aplicada). Trabajo con aprendizaje automático para **segmentación 3D** en dos tipos de datos: volúmenes médicos, como la detección de tumores en resonancias magnéticas, y nubes de puntos LiDAR de plantas industriales.
+Soy estudiante de doctorado en matemática aplicada en el [IMPA](https://impa.br). Trabajo en segmentación 3D con aprendizaje automático, en dos tipos de datos muy distintos: volúmenes de resonancia magnética y nubes de puntos LiDAR.
 
-#### 🔬 Proyectos actuales
+#### En qué estoy trabajando
 
-- **Detección de tumores de mama en resonancia magnética con contraste.** Detección y segmentación de lesiones en resonancia magnética de mama con contraste dinámico (DCE-MRI).
-- **Segmentación de equipos en plantas de petróleo y gas.** Segmentación de máquinas y equipos en nubes de puntos LiDAR de instalaciones de petróleo y gas.
+- Detectar tumores de mama en resonancia magnética con contraste (DCE-MRI)
+- Segmentar equipos en escaneos LiDAR de plantas de petróleo y gas
 
-#### 💡 Intereses
+#### Intereses
 
-- Enseñanza de las matemáticas
-- Aprendizaje automático aplicado a herramientas de diagnóstico asistido por computadora (CAD)
-- Aprendizaje automático para visión por computadora
+La enseñanza de las matemáticas, el aprendizaje automático para el diagnóstico asistido por computadora (CAD) y la visión por computadora en general.
 
-#### 🎓 Formación
+#### Formación
 
-- **Doctorado en Matemática Aplicada**, IMPA (en curso)
-- **Maestría en Matemática Aplicada**, IMPA
-- **Licenciatura en Matemática Aplicada**, UFRJ (Universidade Federal do Rio de Janeiro)
-- Trabajé como trainee de Advanced Analytics en EY (Ernst & Young)
+Hice la licenciatura en matemática aplicada en la UFRJ y la maestría en el IMPA, donde ahora curso el doctorado. También trabajé como trainee de Advanced Analytics en EY.
 
 </details>
