@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" width="100%" alt="Two segmentation scans. Left: a LiDAR point cloud of an industrial plant, where a scan line sweeps across and colors the tank, piping, pump and structure. Right: a voxelized breast MRI volume cut open to show the tissue inside, where a second scan line sweeps down and marks the tumor.">
+  <img src="assets/banner.svg" width="100%" alt="Two segmentation scans. Left: a LiDAR point cloud of an industrial plant, where a scan line sweeps across and colors the tank, piping, pump and structure. Right: a breast MRI viewer stepping through axial slices. The tumor is highlighted in red in the slices where it appears, and next to the viewer it is rebuilt in 3D, one layer per slice.">
 </p>
 
 <h1 align="center">Marcelo Carneiro</h1>

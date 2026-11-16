@@ -2,9 +2,10 @@
 
 Left: a LiDAR point cloud of a small plant. A vertical scan line sweeps left to right and
 colors the segmented equipment.
-Right: a voxelized breast DCE-MRI volume, cut open to show the tissue inside. A horizontal
-scan line sweeps top to bottom, slice by slice, and marks the lesion.
-The two sweeps run on different clocks, like two separate models.
+Right: a breast DCE-MRI viewer stepping through axial slices. In the slices where the tumor
+shows up it is detected (red), and next to the viewer the tumor is rebuilt in 3D, one
+layer per slice, as the scan passes through it.
+The two panels run on different clocks, like two separate models.
 
 Everything is synthetic (geometric shapes + seeded noise). Static SVG with SMIL animation,
 so it needs no GitHub Actions or external service.
@@ -117,61 +118,80 @@ def plant():
     return {k: jitter(np.vstack(v)) for k, v in parts.items()}
 
 
-# ---------- scene B: voxelized breast DCE-MRI volume ----------
-SHADES = ["#5d6670", "#77818b", "#919aa4", "#acb4bd", "#c9cfd6"]  # dark -> bright tissue
+# ---------- scene B: breast DCE-MRI, slice by slice ----------
+NU, NV, NS = 50, 28, 18  # slice width, height (pixels) and number of axial slices
+LEVELS = [None, "#262c33", "#4a515a", "#7d858e", "#b3bac1", "#eef0f2"]  # MRI gray levels on black
 
 
 def smooth_noise(P, waves, freq):
-    """Sum of random plane waves: smooth 3D noise with roughly unit variance."""
+    """Sum of random plane waves: smooth noise with roughly unit variance."""
     acc = np.zeros(P.shape[:-1])
     for _ in range(waves):
-        acc += np.sin(P @ rng.normal(0, freq, 3) + rng.uniform(0, 2 * math.pi))
+        acc += np.sin(P @ rng.normal(0, freq, P.shape[-1]) + rng.uniform(0, 2 * math.pi))
     return acc / math.sqrt(waves / 2)
 
 
-def breast_volume():
-    """Voxel grid of one breast on a block of chest wall, with the half facing the viewer
-    cut away (y > 0 removed) so the inside shows, like a sagittal cross-section."""
-    NX, NY, NZ = 31, 13, 25
-    XW = 5  # chest wall thickness
-    RX, RY, RZ = 22.0, 12.5, 11.0  # breast half-ellipsoid
-    ZC0, DROOP = 13.0, 0.12  # center height at the chest wall, and how much it sags outward
-    i, j, k = np.meshgrid(np.arange(NX), np.arange(NY), np.arange(NZ), indexing="ij")
-    x, y, z = i + 0.5, j + 0.5 - NY, k + 0.5
-    zc = ZC0 - DROOP * (x - XW)
-    rho = np.sqrt(((x - XW) / RX) ** 2 + (y / RY) ** 2 + ((z - zc) / RZ) ** 2)
-    wall = x < XW
-    dome = (x >= XW) & (rho <= 1)
-    tip = XW + RX
-    nipple = (x >= tip - 1) & (x < tip + 1.8) & (y**2 + (z - (ZC0 - DROOP * RX)) ** 2 <= 2.0**2)
-    occ = wall | dome | nipple
+def breast_mri():
+    """Axial slices of a fat-suppressed post-contrast breast MRI (anterior at the top):
+    two breasts on the chest wall, heart and lungs below, and one enhancing tumor.
+    Returns levels[s, v, u] in 0..5 and the tumor mask[s, v, u]."""
+    s, v, u = np.meshgrid(np.arange(NS), np.arange(NV) + 0.5, np.arange(NU) + 0.5, indexing="ij")
+    P = np.stack([u, v, s * 1.6], -1)
+    lob, fine, edge = smooth_noise(P, 10, 0.3), smooth_noise(P, 10, 0.65), smooth_noise(P, 6, 0.5)
+    q = (s - (NS - 1) / 2) / ((NS - 1) / 2)  # -1 (top slice) .. 1 (bottom slice)
+    prof = np.sqrt(np.clip(1 - (0.85 * q) ** 2, 0, 1))  # breasts shrink toward the ends but never vanish
 
-    P = np.stack([x, y, z], -1)
-    lob, fine, edge = smooth_noise(P, 10, 0.35), smooth_noise(P, 10, 0.7), smooth_noise(P, 6, 0.6)
-    # distance from the duct axis (chest wall -> nipple), relative to the local breast radius
-    t = np.clip((x - XW) / RX, 0, 1)
-    local_r = np.sqrt(np.clip(1 - t**2, 0.05, 1))
-    d_axis = np.sqrt((y / RY) ** 2 + ((z - zc) / RZ) ** 2) / local_r
+    e_th = ((u - 25) / 26) ** 2 + ((v - 33) / 15) ** 2
+    thorax = e_th <= 1
+    breasts, d_br = np.zeros(u.shape, bool), np.full(u.shape, 9.0)
+    for ub in (13.0, 37.0):
+        vb = 33 - 15 * math.sqrt(1 - ((ub - 25) / 26) ** 2) + 0.5  # chest surface under this breast
+        rw, rh = 11.0 * (0.72 + 0.28 * prof), 3 + 14 * prof**0.8
+        tip = np.clip((vb - v) / rh, 0, 1)  # 0 at the chest wall, 1 at the nipple: narrows into a cone
+        d = np.sqrt(((u - ub) / (rw * (1 - 0.3 * tip**2))) ** 2 + ((v - vb) / rh) ** 2)
+        inside = (d <= 1) & (v <= vb + 1)
+        gland = inside & (0.8 * lob + 0.35 * fine + 2.0 * (1 - d) - 1.15 > 0) & (d < 0.85) & (v < vb - 1.5)
+        breasts |= inside
+        d_br = np.where(inside, np.minimum(d_br, d), d_br)
+        if ub == 13.0:
+            gland_l = gland
+        else:
+            gland_r = gland
+    body = thorax | breasts
 
-    shade = np.zeros(occ.shape, int)
-    shade[wall] = np.where(fine[wall] > 0.8, 1, 0)  # thorax
-    shade[wall & (x >= XW - 2)] = 1  # pectoral muscle
-    shade[dome] = 1  # fat
-    gland = dome & (0.75 * lob + 0.35 * fine + 2.0 * (1 - d_axis) - 0.9 > 0)
-    gland &= (x - XW > 1.5) & (rho < 0.86)  # retromammary and subcutaneous fat stay dark
-    shade[gland] = 3
-    shade[dome & (rho > 1 - 1.2 / RZ)] = 2  # skin
-    shade[nipple] = 2
-    lc, lr = np.array([XW + 9.5, -0.8, ZC0 - DROOP * 9.5 + 0.6]), np.array([3.3, 2.8, 3.0])
-    lesion = occ & (np.sqrt((((P - lc) / lr) ** 2).sum(-1)) <= 1 + 0.2 * edge)  # irregular border
-    shade[lesion] = 4  # enhancing lesion is bright in DCE
+    lev = np.zeros(u.shape, int)
+    lev[breasts] = 1  # suppressed fat is dark
+    lev[gland_l | gland_r] = 3  # fibroglandular tissue
+    lev[thorax & (e_th > 0.8)] = 2  # pectoral muscle along the chest wall
+    lev[thorax & (e_th <= 0.8) & (fine > 1.1)] = 1  # lung vessels; the rest of the lungs is black
+    hs = np.clip(1 - 0.9 * np.abs(q - 0.35), 0, 1)  # heart, larger in the lower slices
+    e_h = ((u - 23) / (9 * hs + 1e-6)) ** 2 + ((v - 28) / (5.5 * hs + 1e-6)) ** 2
+    lev[thorax & (e_h <= 1)] = 3
+    lev[thorax & (e_h <= 0.35)] = 4  # contrast in the heart chambers
+    pad = np.pad(body, ((0, 0), (1, 1), (1, 1)))
+    skin = body & ~(pad[:, :-2, 1:-1] & pad[:, 2:, 1:-1] & pad[:, 1:-1, :-2] & pad[:, 1:-1, 2:])
+    lev[skin & breasts] = 2
 
-    pad = np.pad(occ, ((0, 1), (0, 1), (0, 1)))
-    open_x, open_y, open_z = ~pad[1:, :-1, :-1], ~pad[:-1, 1:, :-1], ~pad[:-1, :-1, 1:]
-    vis = occ & (open_x | open_y | open_z)  # only voxels with a face toward the camera
-    idx = np.argwhere(vis)
-    corner = idx.astype(float) - [0, NY, 0]  # min corner of each voxel
-    return corner, shade[vis], lesion[vis] & open_y[vis]
+    tc, tr = np.array([12.0, 9.5, 8.5 * 1.6]), np.array([3.3, 2.9, 2.5 * 1.6])
+    tumor = breasts & (np.sqrt((((P - tc) / tr) ** 2).sum(-1)) <= 1 + 0.22 * edge)
+    lev[tumor] = 5  # the enhancing lesion is the brightest thing in the image
+    return lev, tumor
+
+
+def runs(mask):
+    """Row runs of a 2D mask as a path: each pixel row becomes 'M u v h len' strokes."""
+    out = []
+    for v, row in enumerate(mask):
+        d = np.diff(np.r_[0, row.astype(int), 0])
+        for a, b in zip(np.flatnonzero(d == 1), np.flatnonzero(d == -1)):
+            out.append(f"M{a} {v + 0.5}h{b - a}")
+    return "".join(out)
+
+
+def discrete(attr, values, times, dur):
+    return (f'<animate attributeName="{attr}" values="{";".join(values)}" '
+            f'keyTimes="{";".join(f"{t:.4f}".rstrip("0").rstrip(".") for t in times)}" '
+            f'calcMode="discrete" dur="{dur}" repeatCount="indefinite"/>')
 
 
 # ---------- projection + SVG ----------
@@ -233,42 +253,80 @@ def mix(hex_, target, a):
 
 
 def main(path):
-    # LiDAR
+    # LiDAR (unchanged)
     A = plant()
     view_a = camera(28, 24)
     s, off = fit(np.vstack([view_a(p)[0] for p in A.values()]), (14, 10, 610, 266))
     pa = lambda P: (view_a(P)[0] * s + off, view_a(P)[1])
     cuts = np.quantile(np.concatenate([pa(p)[1] for p in A.values()]), [1 / 3, 2 / 3])
 
-    # MRI voxels
-    corner, shade, les_face = breast_volume()
-    view_b = camera(20, 19)
-    cube = np.array([[a, b, c] for a in (0, 1) for b in (0, 1) for c in (0, 1)], float)
-    all_corners = (corner[:, None, :] + cube[None]).reshape(-1, 3)
-    sb, offb = fit(view_b(all_corners)[0], (664, 12, 986, 262))
-    uv0, depth = view_b(corner)[0], view_b.depth(corner + 0.5)
-    uv0 = uv0 * sb + offb
-    order = np.argsort(depth, kind="stable")  # painter's algorithm: far voxels first
+    # MRI
+    lev, tumor = breast_mri()
+    STEP, HOLD = 0.4, 2.4
+    T = NS * STEP + HOLD
+    TB = f"{T:g}s"
+    t_on = [i * STEP / T for i in range(NS)]
+    t_off = t_on[1:] + [1.0]
+    hero = int(np.argmax(tumor.sum((1, 2))))  # slice shown when animation is unsupported
+    tumor_slices = [i for i in range(NS) if tumor[i].any()]
+
+    PX, VX, VY = 4.0, 648, 92  # pixel size and top-left of the image inside the viewer
+    mono = "ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace"
+    slices = []
+    for i in range(NS):
+        if i == 0:
+            anim = discrete("visibility", ["visible", "hidden"], [0, t_off[0]], TB)
+        elif i == NS - 1:
+            anim = discrete("visibility", ["hidden", "visible"], [0, t_on[i]], TB)
+        else:
+            anim = discrete("visibility", ["hidden", "visible", "hidden"], [0, t_on[i], t_off[i]], TB)
+        img = "".join(f'<path stroke="{LEVELS[l]}" d="{runs(lev[i] == l)}"/>' for l in range(1, 6) if (lev[i] == l).any())
+        det = ""
+        if tumor[i].any():
+            img += f'<path stroke="{COLORS["lesion"]}" stroke-opacity="0.85" d="{runs(tumor[i])}"/>'
+            det = f'<circle cx="{VX + 158}" cy="{VY - 14}" r="3.5" fill="{COLORS["lesion"]}"/><text x="{VX + 166}" y="{VY - 10}" fill="{COLORS["lesion"]}">lesion</text>'
+        slices.append(
+            f'<g visibility="{"visible" if i == hero else "hidden"}">{anim}'
+            f'<g transform="translate({VX} {VY}) scale({PX})" fill="none" stroke-width="1.04">{img}</g>'
+            f'<text x="{VX}" y="{VY - 10}">slice {i + 1:02d}/{NS}</text>{det}</g>'
+        )
+
+    # 3D reconstruction of the tumor, one layer per detected slice
+    vv, uu = np.nonzero(tumor.any(0))
+    u0, v0 = uu.min() - 2, vv.min() - 2
+    BU, BV = uu.max() + 3 - u0, vv.max() + 3 - v0  # box around the tumor, full slice range
+    ZS = 1.0  # height of one slice layer in the 3D view, in pixels
+    view_b = camera(30, 24)
+    box_c = np.array([[a, b, c] for a in (0, BU) for b in (0, BV) for c in (0, NS * ZS)], float)
+    sb, offb = fit(view_b(box_c)[0], (876, 30, 988, 250))
+    P2 = lambda P: view_b(np.asarray(P, float))[0] * sb + offb
 
     def face(pts):
-        q = view_b(np.array(pts, float))[0] * sb
-        q -= view_b(np.zeros(3))[0] * sb
+        q = view_b(np.array(pts, float))[0] * sb - view_b(np.zeros(3))[0] * sb
         return "M" + "L".join(f"{a:.2f} {b:.2f}" for a, b in q) + "Z"
 
-    top = face([(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)])
-    fx = face([(1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1)])
-    fy = face([(0, 1, 0), (1, 1, 0), (1, 1, 1), (0, 1, 1)])
-    voxel_defs = "".join(
-        f'<g id="v{n}"><path fill="{mix(c, "white", 0.18)}" d="{top}"/>'
-        f'<path fill="{mix(c, "black", 0.22)}" d="{fx}"/><path fill="{c}" d="{fy}"/></g>'
-        for n, c in enumerate(SHADES)
-    )
-    voxels = "".join(f'<use href="#v{shade[n]}" x="{uv0[n, 0]:.1f}" y="{uv0[n, 1]:.1f}"/>' for n in order)
-    lesion = "".join(f'<use href="#ly" x="{uv0[n, 0]:.1f}" y="{uv0[n, 1]:.1f}"/>' for n in order if les_face[n])
+    red = COLORS["lesion"]
+    cube = (f'<g id="tc"><path fill="{mix(red, "white", 0.25)}" d="{face([(0, 0, ZS), (1, 0, ZS), (1, 1, ZS), (0, 1, ZS)])}"/>'
+            f'<path fill="{mix(red, "black", 0.25)}" d="{face([(1, 0, 0), (1, 1, 0), (1, 1, ZS), (1, 0, ZS)])}"/>'
+            f'<path fill="{red}" d="{face([(0, 1, 0), (1, 1, 0), (1, 1, ZS), (0, 1, ZS)])}"/></g>')
+    layers = []
+    for i in sorted(tumor_slices, reverse=True):  # bottom slice first: painter's order from above
+        z = (NS - 1 - i) * ZS
+        vs, us = np.nonzero(tumor[i])
+        pts = np.c_[us - u0, vs - v0, np.full(len(us), z)].astype(float)
+        order = np.argsort(view_b.depth(pts + 0.5))
+        uv = P2(pts)
+        uses = "".join(f'<use href="#tc" x="{uv[n, 0]:.1f}" y="{uv[n, 1]:.1f}"/>' for n in order)
+        layers.append(f'<g>{discrete("visibility", ["hidden", "visible"], [0, t_on[i]], TB)}{uses}</g>')
 
-    mono = "ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace"
-    TA, TB = "9s", "7s"  # different periods so the two "models" drift in and out of sync
-    ys, ye = 8, 268  # vertical extent of the MRI sweep
+    edges = [(a, b) for a in box_c for b in box_c if (np.abs(a - b) > 0).sum() == 1 and tuple(a) < tuple(b)]
+    wire = "".join(f"M{P2(a)[0, 0]:.1f} {P2(a)[0, 1]:.1f}L{P2(b)[0, 0]:.1f} {P2(b)[0, 1]:.1f}" for a, b in edges)
+    rect = lambda z: "M" + "L".join(f"{x:.1f} {y:.1f}" for x, y in P2([(0, 0, z), (BU, 0, z), (BU, BV, z), (0, BV, z)])) + "Z"
+    plane_d = rect((NS - 1) * ZS + ZS / 2)
+    dy = lambda i: (P2([(0, 0, (NS - 1 - i) * ZS)]) - P2([(0, 0, (NS - 1) * ZS)]))[0, 1]
+    plane_anim = (f'<animateTransform attributeName="transform" type="translate" calcMode="discrete" '
+                  f'values="{";".join(f"0 {dy(i):.1f}" for i in range(NS))}" '
+                  f'keyTimes="{";".join(f"{t:.4f}" for t in t_on)}" dur="{TB}" repeatCount="indefinite"/>')
 
     def legend(x, y, items):
         out, cx = [], x
@@ -278,15 +336,13 @@ def main(path):
             cx += 22 + 7.3 * len(label)
         return "".join(out)
 
+    TA = "9s"
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-labelledby="t">
-<title id="t">3D segmentation: a LiDAR point cloud of an industrial plant and a voxelized breast MRI volume, each revealed by its own scan line</title>
+<title id="t">3D segmentation: a LiDAR point cloud of an industrial plant being segmented, and a breast MRI scanned slice by slice, where a detected tumor is reconstructed in 3D</title>
 <defs>
 <clipPath id="ra"><rect x="0" y="0" width="{SPLIT}" height="{H}">
 <animate attributeName="width" values="0;{SPLIT};{SPLIT}" keyTimes="0;0.45;1" dur="{TA}" repeatCount="indefinite"/></rect></clipPath>
-<clipPath id="rb"><rect x="{SPLIT}" y="{ys}" width="{W - SPLIT}" height="{ye - ys}">
-<animate attributeName="height" values="0;{ye - ys};{ye - ys}" keyTimes="0;0.5;1" dur="{TB}" repeatCount="indefinite"/></rect></clipPath>
-{voxel_defs}
-<path id="ly" fill="{COLORS['lesion']}" d="{fy}"/>
+{cube}
 </defs>
 
 <g fill="none" stroke-linecap="round">
@@ -302,21 +358,25 @@ def main(path):
 <animate attributeName="opacity" values="0;0.8;0.8;0;0" keyTimes="0;0.03;0.42;0.46;1" dur="{TA}" repeatCount="indefinite"/>
 </line>
 
-<g stroke="#000" stroke-opacity="0.13" stroke-width="0.4" stroke-linejoin="round">{voxels}</g>
-<g clip-path="url(#rb)" stroke="#000" stroke-opacity="0.13" stroke-width="0.4" fill-opacity="0.92">
-<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.8;0.93;1" dur="{TB}" repeatCount="indefinite"/>
-{lesion}
+<rect x="{VX - 8}" y="{VY - 28}" width="{NU * PX + 16}" height="{NV * PX + 38}" rx="6" fill="#0b0e12" stroke="#30363d"/>
+<g font-family="{mono}" font-size="10" fill="{GRAY}">
+{chr(10).join(slices)}
 </g>
-<line x1="{SPLIT + 12}" y1="{ys}" x2="{W - 8}" y2="{ys}" stroke="{COLORS['lesion']}" stroke-width="1.5" opacity="0">
-<animate attributeName="y1" values="{ys};{ye};{ye}" keyTimes="0;0.5;1" dur="{TB}" repeatCount="indefinite"/>
-<animate attributeName="y2" values="{ys};{ye};{ye}" keyTimes="0;0.5;1" dur="{TB}" repeatCount="indefinite"/>
-<animate attributeName="opacity" values="0;0.8;0.8;0;0" keyTimes="0;0.03;0.47;0.51;1" dur="{TB}" repeatCount="indefinite"/>
-</line>
+
+<path d="{wire}" fill="none" stroke="{GRAY}" stroke-opacity="0.4" stroke-width="0.8"/>
+<g stroke="#000" stroke-opacity="0.15" stroke-width="0.4" stroke-linejoin="round">
+{chr(10).join(layers)}
+</g>
+<path d="{plane_d}" fill="{GRAY}" fill-opacity="0.12" stroke="{GRAY}" stroke-opacity="0.8" stroke-width="0.8" transform="translate(0 {dy(hero):.1f})">
+{plane_anim}
+{discrete("opacity", ["1", "0"], [0, NS * STEP / T], TB)}
+</path>
+<text x="{(876 + 988) / 2}" y="{P2(box_c)[:, 1].max() + 16:.0f}" font-family="{mono}" font-size="10" fill="{GRAY}" text-anchor="middle">3d reconstruction</text>
 
 <line x1="{SPLIT}" y1="18" x2="{SPLIT}" y2="300" stroke="{GRAY}" stroke-opacity="0.3" stroke-dasharray="2 5"/>
 <g font-family="{mono}" font-size="12" fill="{GRAY}">
 <text x="20" y="290">lidar point cloud — equipment segmentation</text>
-<text x="652" y="290">breast dce-mri — lesion segmentation</text>
+<text x="652" y="290">breast dce-mri — slice-by-slice detection</text>
 {legend(20, 312, [("tank", "tank"), ("pipe", "piping"), ("pump", "pump"), ("structure", "structure")])}
 {legend(652, 312, [("lesion", "lesion")])}
 </g>
@@ -324,8 +384,8 @@ def main(path):
 """
     with open(path, "w") as f:
         f.write(svg)
-    print(f"wrote {path}: {len(svg) / 1024:.0f} KB, {sum(len(p) for p in A.values())} lidar points, "
-          f"{len(corner)} visible voxels ({int(les_face.sum())} lesion faces on the cut)")
+    print(f"wrote {path}: {len(svg) / 1024:.0f} KB; tumor in slices {tumor_slices[0] + 1}-{tumor_slices[-1] + 1} "
+          f"of {NS}, {int(tumor.sum())} tumor voxels, cycle {T:g}s")
 
 
 if __name__ == "__main__":
